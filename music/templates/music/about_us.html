@@ -1,6 +1,6 @@
 {% extends 'music/base_visitor.html' %}
-{% block title %}Register{% endblock %}
-{% block register_active %}active{% endblock %}
+{% block title %}About Us{% endblock %}
+{% block about_us %}active{% endblock %}
 
 {% block body %}
 <div class="container-fluid">
@@ -8,35 +8,11 @@
     <div class="row">
         <div class="col-sm-12">
             <div class="card card-container">
-                <h1 class="page-title">Register</h1>
+                <h1 class="page-title" href="{% url 'music:index' %}"><span class="glyphicon glyphicon-headphones" aria-hidden="true"></span>&nbsp;Easy Music</h1>
+                <hr style="border: none; border-bottom: 1px solid black;">
+                <h1 class="page-title">About Us</h1>
                 <div class="panel-body">
-                    {% if error_message %}
-                        <p><strong>{{ error_message }}</strong></p>
-                    {% endif %}
-                    <form class="form-horizontal" role="form" action="" method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <input class="form-control" id="id_username" maxlength="30" name="username" type="text" placeholder="Username">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <input class="form-control" id="id_email" maxlength="50" name="email" type="email" placeholder="Email">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-sm-12">
-                                <input class="form-control" id="id_password" maxlength="30" name="password" type="password" placeholder="Password">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class= "col-sm-12">
-                                <button type="submit" class="btn btn-lg btn-primary btn-block btn-signup">Submit</button>
-                            </div>
-                        </div>
-                    </form>
-                    Already have an account? <a href="{% url 'music:login_user' %}">Click here</a> to log in.
+                        <p><strong>Easy Music.............</strong></p>
                 </div>
             </div>
         </div>

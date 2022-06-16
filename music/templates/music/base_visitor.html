@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}App Music{% endblock %}</title>
-    {% load staticfiles %}
+    {% load static%}
     <link rel="shortcut icon" type="image/png" href="{%  static 'favicon.ico' %}"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <!-- <link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'> -->
@@ -31,7 +31,8 @@
             <ul class="nav navbar-nav">
                 <li class="{% block login_active %}{% endblock %}"><a href="{% url 'music:login_user' %}">Log In</a></li>
                 <li class="{% block register_active %}{% endblock %}"><a href="{% url 'music:register' %}">Register</a></li>
-                <li class="about_us"><a href="about_us.html">About Us</a></li>
+                <li class="{% block about_us %}{% endblock %}"><a href="{% url 'music:about_us' %}">About Us</a></li>
+                <!-- <li class="about_us"><a href="about_us.html">About Us</a></li> -->
             </ul>
         </div>
 

@@ -1,18 +1,21 @@
 from __future__ import unicode_literals
 from django.contrib.auth import authenticate, login
+from django.core.files import File
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import logout
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from .models import Album, Song
 from .forms import AlbumForm, SongForm, UserForm, DownloadForm
-# import youtube_dl
+from pytube import YouTube
+import os
 import re
+import random
 AUDIO_FILE_TYPES = ['wav', 'mp3', 'ogg']
 IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg']
 
 def about_us(request):
-    return render(request, '/about_us.html')
+    return render(request, 'music/about_us.html')
     
 def index(request):
     if not request.user.is_authenticated:
@@ -226,61 +229,43 @@ def delete_song(request, album_id, song_id):
     song.delete()
     return render(request, 'music/detail.html', {'album': album})
 
-# def download_video(request):
-#     global context
-#     form = DownloadForm(request.POST or None)
+def download_song(request, album_id):
+    global context
+    form = DownloadForm(request.POST or None)
 
-#     if form.is_valid():
-#         video_url = form.cleaned_data.get("url")
-#         regex = r'^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+'
-#         if not re.match(regex,video_url):
-#             return HttpResponse('Enter correct url.')
+    if form.is_valid():
+        album = get_object_or_404(Album, pk=album_id)
+        video_url = form.cleaned_data.get("url")
+        regex = r'^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+'
+        if not re.match(regex,video_url):
+            return HttpResponse('Enter correct url.')
+        message = download_mp3(video_url,album)
+        if message:
+            return render(request, 'music/detail.html', {'album': album,'error_message':message})
+        return render(request, 'music/detail.html', {'album': album})
+        # except Exception as error:
+        #     return HttpResponse(error.args[0])
+    return render(request, 'music/downloader.html', {'form': form})
 
-#         ydl_opts = {}
-#         download_mp3(video_url)
-#         try:
-#             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-#                 meta = ydl.extract_info(
-#                     video_url, download=False)
-#             video_audio_streams = []
-#             for m in meta['formats']:
-#                 file_size = m['filesize']
-#                 if file_size is not None:
-#                     file_size = str(round(int(file_size) / 1000000,2))+"mb"
-
-#                 resolution = 'Audio'
-#                 if m['height'] is not None:
-#                     resolution = str(m['height'])+"x"+str(m['width'])
-#                 video_audio_streams.append({
-#                     'resolution': resolution,
-#                     'extension': m['ext'],
-#                     'file_size': file_size,
-#                     'video_url': m['url']
-#                 })
-#             video_audio_streams = video_audio_streams[::-1]
-#             context = {
-#                 'form': form,
-#                 'title': meta.get('title', None),
-#                 'streams': video_audio_streams,
-#                 'description': meta.get('description'),
-#                 'likes': int(meta.get("like_count", 0)),
-#                 'dislikes': int(meta.get("dislike_count", 0)),
-#                 'thumb': meta.get('thumbnails')[3]['url'],
-#                 'duration': round(int(meta.get('duration', 1))/60, 2),
-#                 'views': int(meta.get("view_count"))
-#             }
-#             print(context)
-#             return render(request, 'music/downloader.html', context)
-#         except Exception as error:
-#             return HttpResponse(error.args[0])
-#     return render(request, 'music/downloader.html', {'form': form})
-
-# def download_mp3(url):
-#     video_info = youtube_dl.YoutubeDL().extract_info(url=url, download = False)
-#     options = {
-#     "format": 'bestaudio/best',
-#     "keepvideo": False,
-#     'outtmpl': str(video_info["title"])+'.mp3'
-#     }
-#     with youtube_dl.YoutubeDL(options) as ydl:
-#         ydl.download([video_info["webpage_url"]])
+def download_mp3(url, album):
+    yt = YouTube(url)
+    video = yt.streams.filter(only_audio=True).first()
+    destination = 'media/'
+    out_file = video.download(output_path=destination)
+    base, ext = os.path.splitext(out_file)
+    new_file = base + '.mp3'
+    title = str(base.split('/')[-1])
+    try:
+        os.rename(out_file, new_file)
+    except:
+        if Song.objects.get(song_title = title,album = album):
+            return "Cannot Download Duplicate Song in same Album!!!!!"
+        random_no = random.randrange(0, 10000, 3)
+        new_file = base +"_"+str(random_no)+ '.mp3'
+        title = str(base.split('/')[-1]) +"_"+str(random_no)
+        os.rename(out_file, new_file)
+    Song.objects.create(album = album,song_title = title)
+    song_model = Song.objects.get(song_title = title)
+    file =  open(new_file, 'rb')
+    song_model.audio_file = File(file)
+    song_model.save()
