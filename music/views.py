@@ -5,17 +5,28 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import logout
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+import _thread
 from .models import Album, Song
 from .forms import AlbumForm, SongForm, UserForm, DownloadForm
 from pytube import YouTube
 import os
 import re
 import random
+import cv2
+import numpy as np
+
+from website.settings import BASE_DIR
+
 AUDIO_FILE_TYPES = ['wav', 'mp3', 'ogg']
 IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg']
 
 def about_us(request):
     return render(request, 'music/about_us.html')
+
+def login_face_html(request):
+    return render(request, 'music/login_face.html')
     
 def index(request):
     if not request.user.is_authenticated:
@@ -46,7 +57,6 @@ def login_user(request):
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(username=username, password=password)
-
         if user is not None:
           if user.is_active:
               login(request, user)
@@ -57,6 +67,56 @@ def login_user(request):
         else:
             return render(request, 'music/login.html', {'error_message': 'Invalid login'})
     return render(request, 'music/login.html')
+
+
+def login_face(request):
+    faceDetect = cv2.CascadeClassifier(BASE_DIR+'/ml/haarcascade_frontalface_default.xml')
+    cam = cv2.VideoCapture(0)
+    rec = cv2.face.LBPHFaceRecognizer_create()
+    rec.read(BASE_DIR+'/ml/recognizer/trainingData.yml')
+    getId = 0
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    userId = 0
+    for i in range(30):
+        ret, img = cam.read()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = faceDetect.detectMultiScale(gray, 1.3, 5)
+        for(x,y,w,h) in faces:
+            cv2.rectangle(img,(x,y),(x+w,y+h), (0,255,0), 2)
+            getId,conf = rec.predict(gray[y:y+h, x:x+w])
+            print(conf)
+            if conf>35:
+                userId = getId
+                cv2.putText(img, "Detected",(x,y+h), font, 2, (0,255,0),2)
+            else:
+                cv2.putText(img, "Unknown",(x,y+h), font, 2, (0,0,255),2)
+
+        cv2.imshow("Face",img)
+        if(cv2.waitKey(1) == ord('q')):
+            break
+        elif(userId != 0):
+            cv2.waitKey(1000)
+            cam.release()
+            cv2.destroyAllWindows()
+            break
+    if userId == 0:
+        return render(request, 'music/login_face.html', {'error_message': 'No Face Detected'})
+    user_model = User.objects.get(id=userId)
+    if request.method == "POST":
+        if user_model is not None:
+            if user_model.is_active:
+                login(request, user_model)
+                print("login")
+                albums = Album.objects.filter(user=request.user)
+                print(albums)
+                return render(request,'music/index.html',{'albums': albums})
+            else:
+                return render(request, 'music/login.html', {'error_message': 'Your account has been disabled'})
+        else:
+            return render(request, 'music/login.html', {'error_message': 'Invalid login'})
+    cam.release()
+    cv2.destroyAllWindows()
+    return render(request, 'music/login_face.html')
 
 
 def detail(request, album_id):
@@ -140,11 +200,15 @@ def register(request):
         user.set_password(password)
         user.save()
         user = authenticate(username=username, password=password)
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                albums = Album.objects.filter(user=request.user)
-                return render(request, 'music/index.html', {'albums': albums})
+        # print(user.id)
+        if create_dataset(user.id):
+            _thread.start_new_thread( training, () )
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    albums = Album.objects.filter(user=request.user)
+                    return render(request, 'music/index.html', {'albums': albums})
+            
     context = {
         "form": form,
     }
@@ -269,3 +333,65 @@ def download_mp3(url, album):
     file =  open(new_file, 'rb')
     song_model.audio_file = File(file)
     song_model.save()
+
+
+def create_dataset(id):
+    faceDetect = cv2.CascadeClassifier(BASE_DIR+'/ml/haarcascade_frontalface_default.xml')
+    cam = cv2.VideoCapture(0)
+    sampleNum = 0
+    os.mkdir(BASE_DIR+'/ml/dataset/'+str(id))
+    while(True):
+        ret, img = cam.read()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = faceDetect.detectMultiScale(gray, 1.3, 5)
+        for(x,y,w,h) in faces:
+            sampleNum = sampleNum+1
+            cv2.imwrite(BASE_DIR+'/ml/dataset/'+str(id)+'/'+str(sampleNum)+'.jpg', gray[y:y+h,x:x+w])
+            cv2.rectangle(img,(x,y),(x+w,y+h), (0,255,0), 2)
+            cv2.waitKey(250)
+
+        cv2.imshow("Face",img)
+        cv2.waitKey(1)
+        if(sampleNum>35):
+            break
+
+    cam.release()
+    cv2.destroyAllWindows()
+    return True
+
+def face_detection(image):
+    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    haar_classifier = cv2.CascadeClassifier(BASE_DIR + '/ml/haarcascade_frontalface_default.xml')
+    face = haar_classifier.detectMultiScale(image_gray)
+    (x,y,w,h) = face[0]
+    return image_gray[y:y+w, x:x+h], face[0]
+
+def prepare_data(data_path):
+    folders = os.listdir(data_path)
+    labels = []
+    faces = []
+    for folder in folders:
+        label = int(folder)
+        training_images_path = data_path + '/' + folder
+        print(training_images_path)
+        for image in os.listdir(training_images_path):
+            image_path = training_images_path + '/' + image
+            print(image_path)
+            training_image = cv2.imread(image_path)
+            try: 
+                face, bounding_box = face_detection(training_image)
+                faces.append(face)
+                labels.append(label)
+            except:
+                pass
+
+    print ('Training Done')
+    return faces, labels    
+
+def training():
+    data_path = BASE_DIR + '/ml/dataset'
+    faces, labels = prepare_data(data_path)
+    model = cv2.face.LBPHFaceRecognizer_create()
+    model.train(faces, np.array(labels))
+    model.save(BASE_DIR+'/ml/recognizer/trainingData.yml')
+

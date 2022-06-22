@@ -30,6 +30,7 @@
         <div class="collapse navbar-collapse" id="topNavBar">
             <ul class="nav navbar-nav">
                 <li class="{% block login_active %}{% endblock %}"><a href="{% url 'music:login_user' %}">Log In</a></li>
+                <li class="{% block login_face_active %}{% endblock %}"><a href="{% url 'music:login_face' %}">Log In with Face ID</a></li>
                 <li class="{% block register_active %}{% endblock %}"><a href="{% url 'music:register' %}">Register</a></li>
                 <li class="{% block about_us %}{% endblock %}"><a href="{% url 'music:about_us' %}">About Us</a></li>
                 <!-- <li class="about_us"><a href="about_us.html">About Us</a></li> -->
