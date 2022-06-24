@@ -16,7 +16,7 @@ import re
 import random
 import cv2
 import numpy as np
-
+from time import sleep
 from website.settings import BASE_DIR
 
 AUDIO_FILE_TYPES = ['wav', 'mp3', 'ogg']
@@ -77,7 +77,8 @@ def login_face(request):
     getId = 0
     font = cv2.FONT_HERSHEY_SIMPLEX
     userId = 0
-    for i in range(30):
+    for i in range(15):
+        sleep(1)
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = faceDetect.detectMultiScale(gray, 1.3, 5)
@@ -339,7 +340,8 @@ def create_dataset(id):
     faceDetect = cv2.CascadeClassifier(BASE_DIR+'/ml/haarcascade_frontalface_default.xml')
     cam = cv2.VideoCapture(0)
     sampleNum = 0
-    os.mkdir(BASE_DIR+'/ml/dataset/'+str(id))
+    print((BASE_DIR+'/ml/dataset/'+str(id)))
+    os.makedirs(BASE_DIR+'/ml/dataset/'+str(id),exist_ok = True)
     while(True):
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

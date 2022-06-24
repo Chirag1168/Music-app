@@ -38,7 +38,9 @@
                                     <td>
                                         <a target="_blank" href="{{ song.audio_file.url }}">
                                             <button type="button" class="btn btn-success btn-xs">
-                                                <span class="glyphicon glyphicon-play"></span>&nbsp; Play
+                                                <a href="javascript:showhide('footer')">
+                                                <span class="glyphicon glyphicon-play" ></span>&nbsp; Play
+                                            </a>
                                             </button>
                                         </a>
                                     </td>
@@ -61,6 +63,33 @@
         </div>
 
     </div>
+    <footer class="footer" id = "footer" style = " position: fixed; bottom: 0;width: 100%;">
+        <div class="player" style="padding-left: 10px;padding-top:10px;background-color: #030a11;">
+            {% for song in song_list %}
+          <div class="right">
+             <div class="top">
+                {% if song_list.first %}
+                <a class="song" style="margin-left: 15px;color: white;">{{ song.song_title  }}</a>
+             </div>
+             <div class="bottom">
+                <audio controls=""  name="media" style="margin-left: 20px;margin-bottom: 10px;width: 1230px;height:30px"><source src="{{ song.audio_file.url  }}"> type="audio/mpeg" ></audio>
+                {% endif %}    
+                {% endfor %}
+              </div>
+          </div>
+        </div>
+    </footer>
 
+    <script>
+
+        function showhide(id) {
+        var e = document.getElementById(id);
+       if(e.style.display == 'block')
+          e.style.display = 'none';
+       else
+          e.style.display = 'block';
+     }
+
+    </script>
 </div>
 {% endblock %}

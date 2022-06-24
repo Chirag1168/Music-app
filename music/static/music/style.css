@@ -1,6 +1,6 @@
 body, html {
     background-repeat: no-repeat;
-    background: url('images/music.png');
+    background: url('images/background.jpg');
 }
 .navbar{
   border-radius:0;
@@ -130,6 +130,7 @@ body, html {
     -webkit-border-radius: 50%;
     border-radius: 50%;
 }
+
 
 @media only screen and (min-width: 1023px){
 .thumbnail:hover{transform: scale(1.10);transition: .2s;}
