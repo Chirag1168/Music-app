@@ -38,7 +38,7 @@
                                     <td>
                                         <a target="_blank" href="{{ song.audio_file.url }}">
                                             <button type="button" class="btn btn-success btn-xs">
-                                                <a href="javascript:showhide('footer')">
+                                                <a href="javascript:showhide('footer','{{ song.audio_file.url }}','{{ song.song_title }}')">
                                                 <span class="glyphicon glyphicon-play" ></span>&nbsp; Play
                                             </a>
                                             </button>
@@ -65,16 +65,12 @@
     </div>
     <footer class="footer" id = "footer" style = " position: fixed; bottom: 0;width: 100%;">
         <div class="player" style="padding-left: 10px;padding-top:10px;background-color: #030a11;">
-            {% for song in song_list %}
           <div class="right">
              <div class="top">
-                {% if song_list.first %}
-                <a class="song" style="margin-left: 15px;color: white;">{{ song.song_title  }}</a>
+                <a id = "title" class="song" style="margin-left: 15px;color: white;">{{song_title}}</a>
              </div>
              <div class="bottom">
-                <audio controls=""  name="media" style="margin-left: 20px;margin-bottom: 10px;width: 1230px;height:30px"><source src="{{ song.audio_file.url  }}"> type="audio/mpeg" ></audio>
-                {% endif %}    
-                {% endfor %}
+                <audio id="audio" controls="controls" name="media" style="margin-left: 20px;margin-bottom: 10px;width: 1230px;height:30px"><source id="audioSource" src="{{ song_url  }}"> type="audio/mpeg" ></audio>
               </div>
           </div>
         </div>
@@ -82,14 +78,27 @@
 
     <script>
 
-        function showhide(id) {
+        function showhide(id,url,title) {
         var e = document.getElementById(id);
+        var audio = document.getElementById('audio');
+        var source = document.getElementById('audioSource');
        if(e.style.display == 'block')
+       {
           e.style.display = 'none';
+          audio.pause();
+          audio.currentTime = 0;
+       }
        else
-          e.style.display = 'block';
+       {
+        e.style.display = 'block';
+        var title_1 = document.getElementById('title');
+        title_1.innerHTML = title;
+        source.src = url;
+        audio.load();
+        audio.play();
+       }
+        
      }
-
     </script>
 </div>
 {% endblock %}
