@@ -178,8 +178,8 @@ def songs(request, filter_by):
         return render(request, 'music/songs.html', {
             'song_list': users_songs,
             'filter_by': filter_by,
-            'song_url' : users_songs[0].audio_file.url,
-            'song_title': users_songs[0].song_title,
+            # 'song_url' : users_songs[0].audio_file.url,
+            # 'song_title': users_songs[0].song_title,
         })
 
 
